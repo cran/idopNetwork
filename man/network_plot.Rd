@@ -4,12 +4,16 @@
 \alias{network_plot}
 \title{generate network plot}
 \usage{
-network_plot(result, title = NULL)
+network_plot(result, title = NULL, maxeffect = NULL, type = NULL)
 }
 \arguments{
 \item{result}{list result from network_conversion}
 
 \item{title}{text for plot title}
+
+\item{maxeffect}{control edge size when compare networks}
+
+\item{type}{select module effect or microbe effect}
 }
 \value{
 network plot

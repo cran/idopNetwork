@@ -14,7 +14,7 @@ bifun_clu(
   inv.cov = NULL,
   initial.pars = NULL,
   iter.max = 100,
-  parscale = 0.1
+  parscale = 0.001
 )
 }
 \arguments{

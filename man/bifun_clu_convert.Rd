@@ -4,16 +4,12 @@
 \alias{bifun_clu_convert}
 \title{convert result of bifunctional clustering result}
 \usage{
-bifun_clu_convert(result, best.k, n1, n2)
+bifun_clu_convert(result, best.k)
 }
 \arguments{
 \item{result}{list directly from bifun_clu_parallel function}
 
 \item{best.k}{scale of BIC-determined cluster number}
-
-\item{n1}{scalar for number of column contain first trait/location etc}
-
-\item{n2}{scalar for number of column contain second trait/location etc}
 }
 \value{
 list contain module data and fitted data

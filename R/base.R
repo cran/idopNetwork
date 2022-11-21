@@ -8,6 +8,14 @@ logsumexp <- function(v) {
   log(sum(exp(v-vm))) + vm
 }
 
+#' @title min-max normalization
+#' @param x numeric vector
+#' @param z scalar add minimum value to avoid 0
+#' @return normalized vector
+#' @examples normalization(runif(100,min = -100, max = 100))
+#' @export
+normalization <- function(x, z = 0.2){(x-min(x))/(max(x)-min(x))+z}
+
 #' @title curve fit with modified logistic function
 #' @param mu_par vector with five number
 #' @param times vector of time point

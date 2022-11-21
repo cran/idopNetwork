@@ -2,7 +2,7 @@ Package: idopNetwork
 Type: Package
 Title: A Cartographic Tool to Chart Spatial Microbial Interaction
         Networks
-Version: 0.1.0
+Version: 0.1.1
 Author: Ang Dong
 Maintainer: Ang Dong <fantasys05227@gmail.com>
 Description: Most existing approaches for network reconstruction can only infer an overall network 
@@ -24,6 +24,6 @@ RoxygenNote: 7.2.1
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2022-11-09 08:10:14 UTC; ddaa
+Packaged: 2022-11-21 05:31:51 UTC; ddaa
 Repository: CRAN
-Date/Publication: 2022-11-09 11:50:06 UTC
+Date/Publication: 2022-11-21 08:30:02 UTC

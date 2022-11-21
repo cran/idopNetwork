@@ -4,7 +4,7 @@
 \alias{power_equation_plot}
 \title{plot power equation fitting results}
 \usage{
-power_equation_plot(result, label = math_format(expr = 10^.x), n = 9)
+power_equation_plot(result, label = 10, n = 9)
 }
 \arguments{
 \item{result}{list object returned from power_equation_fit}

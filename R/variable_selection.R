@@ -55,7 +55,7 @@ get_interaction <- function(data, col, reduction = FALSE ){
         if ( length(return_obj$dep.name)==0 ) {
           tmp = cor(x,y)
           return_obj$dep.name = rownames(tmp)[which.max(abs(tmp))]
-          return_obj$coefficient = tmp[which.max(abs(tmp))]
+          return_obj$coefficient = tmp[which.max(abs(tmp))]*1/3
         }
 
       }

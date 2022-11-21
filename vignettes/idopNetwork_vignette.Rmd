@@ -15,7 +15,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  tidy = TRUE,
+  tidy = FALSE,
   cache = TRUE,
   collapse = TRUE,
   dev = "png",
@@ -63,17 +63,29 @@ View(mustard_microbe)
 
 ```{r, echo=FALSE}
 knitr::kable(mustard_microbe[1:10,1:5])
-knitr::kable(mustard_microbe[1:10,6:10])
+knitr::kable(mustard_microbe[1:10,89:93])
 ```
+
 
 # 2. power curve fitting
 The first major step in our idopNetwork reconstruction is to fit allometric growth curves to the data using the power function. This is easily done by using the related function power_fit. This function needs cleaned dataset as input and will return fitted OTUs for given dataset. Then the fitted output with original dataset can be transfer into function power_equation_plot for quick visualization
 
-```{r, echo=TRUE}
+```{r, echo=TRUE, eval=TRUE}
 df = data_cleaning(gut_microbe)
+```
+
+```{r, echo=TRUE, eval=FALSE}
 result1 = power_equation_fit(df)
+```
+
+```{r, echo=FALSE, eval=TRUE}
+result1 = test_result$d1_power_fitting
+```
+
+```{r, echo=TRUE, eval=TRUE}
 power_equation_plot(result1)
 ```
+
 
 # 3. Functional clustering
 In this step we implement the power equation into functional clustering to detect different microbial modules. If after clustering there are still too many microbes within a certain module for network reconstruction, we can rerun functional clustering to further classify this module into distinct submodules. 
@@ -122,7 +134,7 @@ options(max.print = 10)
 fun_clu(result1$original_data, k = 3, iter.max = 5)
 ```
 
-Usually we use multithread to calcuation k = 2-n and then to decide best k , fun_clu_BIC use BIC to select best cluster number by default
+Usually we use multithread to calcuation k = 2-n and then to decide best k , `fun_clu_BIC` uses BIC to select best cluster number by default.
 
 ```{r, eval=FALSE}
 result2 = fun_clu_parallel(result1$original_data, start = 2, end = 5)
@@ -142,17 +154,16 @@ fun_clu_BIC(result = result2)
 fun_clu_plot(result = result2, best.k = best.k)
 ```
 
-
 ## 3.5 bi-functional clustering (power-equation,biSAD1)
-
+In this part we select part of mustard data for demonstration purpose.
 ```{r, eval=TRUE}
 data("mustard_microbe")
-df2 = data_cleaning(mustard_microbe, x = 1)
+df2 = data_cleaning(mustard_microbe, x = 160)
 ```
 
 ```{r, echo=TRUE, eval=FALSE}
-res_l = power_equation_fit(df2[,1:5],trans = NULL)
-res_r = power_equation_fit(df2[,6:10],trans = NULL)
+res_l = power_equation_fit(df2[,1:5]
+res_r = power_equation_fit(df2[,89:95])
 res1 = data_match(result1 = res_l, result2 = res_r)
 ```
 
@@ -161,9 +172,29 @@ res1 = test_result$d2_power_fitting
 ```
 
 ```{r, echo=TRUE, eval=FALSE}
-res2 = bifun_clu_parallel(data1 = res1$dataset1$original_data, data2 = res1$dataset2$original_data,
-                          Time1 = res1$dataset1$Time, Time2 = res1$dataset2$Time, trans = NULL,
-                          start = 2, end = 10, iter.max = 10)
+res2 = bifun_clu_parallel(data1 = res1$dataset1$original_data, 
+                          data2 = res1$dataset2$original_data,
+                          Time1 = res1$dataset1$Time, 
+                          Time2 = res1$dataset2$Time,
+                          start = 2, 
+                          end = 10, 
+                          thread = 9,
+                          iter.max = 10)
+```
+
+```{r, echo=FALSE, eval=TRUE}
+res2 = test_result$d2_cluster
+```
+
+```{r, echo=TRUE, eval=FALSE}
+res2 = bifun_clu_parallel(data1 = res1$dataset1$original_data, 
+                          data2 = res1$dataset2$original_data,
+                          Time1 = res1$dataset1$Time, 
+                          Time2 = res1$dataset2$Time,
+                          start = 2, 
+                          end = 10, 
+                          thread = 9,
+                          iter.max = 10)
 ```
 
 ```{r, echo=FALSE, eval=TRUE}
@@ -174,28 +205,29 @@ res2 = test_result$d2_cluster
 fun_clu_BIC(result = res2)
 
 #we can set best.k directly
-bifun_clu_plot(result = res2, best.k = 5, label = NULL, n1 = 5, n2 = 5)
+bifun_clu_plot(result = res2, best.k = 3, color1 = "#C060A1", color2 = "#59C1BD")
 ```
+
 
 ## 3.6 sub-clustering
 Sometimes a module is still too large for network reconstruction, which is determined by Dunbar’s number, we can further cluster it into sub-modules. 
 
 ```{r, echo=TRUE, eval=FALSE}
-res3 = bifun_clu_convert(res2, best.k = 6, n1 = 5, n2 = 5)
+res3 = bifun_clu_convert(res2, best.k = 3)
 large.module = order(sapply(res3$a$Module.all,nrow))[5]
 
 res_suba = fun_clu_select(result_fit = res1$dataset1, result_funclu = res3$a, i = large.module)
 res_subb = fun_clu_select(result_fit = res1$dataset2, result_funclu = res3$b, i = large.module)
-dfsuba_l = power_equation_fit(res_suba$original_data,trans = NULL)
-dfsubb_r = power_equation_fit(res_subb$original_data,trans = NULL)
+dfsuba_l = power_equation_fit(res_suba$original_data)
+dfsubb_r = power_equation_fit(res_subb$original_data)
 ressub1 = data_match(result1 = dfsuba_l, result2 = dfsubb_r)
 ressub2 = bifun_clu_parallel(data1 = ressub1$dataset1$original_data, 
                              data2 = ressub1$dataset2$original_data,
                              Time1 = ressub1$dataset1$Time, 
                              Time2 = ressub1$dataset2$Time, 
-                             trans = NULL,
-                             start = 2, end = 5, 
-                             iter.max = 1)
+                             start = 2, 
+                             end = 5, 
+                             iter.max = 3)
 ```
 
 ```{r, echo==FALSE}
@@ -205,7 +237,7 @@ ressub2 = test_result$d2_subcluster
 
 ```{r, eval=TRUE, echo=TRUE}
 fun_clu_BIC(result = ressub2)
-bifun_clu_plot(result = ressub2, best.k = 3, label = NULL, n1 = 5, n2 = 5)
+bifun_clu_plot(result = ressub2, best.k = 2, color1 = "#C060A1", color2 = "#59C1BD", degree = 1)
 ```
 
 # 4. LASSO-based variable selection
@@ -312,6 +344,32 @@ set.seed(1)
 network_plot(mustard_m_b, title = "Module Network b")
 ```
 
+###
+```{r, eval=FALSE}
+result_m1a = fun_clu_select(result_fit = res1$dataset1, result_funclu = res3$a, i = 1)
+result_m1b = fun_clu_select(result_fit = res1$dataset2, result_funclu = res3$b, i = 1)
+ode.m1a = qdODE_parallel(result_m1a, thread = 16)
+ode.m1b = qdODE_parallel(result_m1b, thread = 16)
+```
+
+```{r, echo=FALSE, eval=TRUE}
+ode.m1a = test_result$d2_m1[[1]]
+ode.m1b = test_result$d2_m1[[2]]
+```
+
+```{r, eval=TRUE}
+net_m1a = lapply(ode.m1a$ode_result, network_conversion)
+net_m1b = lapply(ode.m1b$ode_result, network_conversion)
+
+#set seed to make same random layout
+layout(matrix(c(1,2),1,2,byrow=TRUE))
+set.seed(1)
+network_plot(net_m1a, title = "Module1 a")
+set.seed(1)
+network_plot(net_m1b, title = "Module1 b")
+```
+
+
 ```{r, eval=TRUE, echo=FALSE}
 options(backup_options)
 ```
@@ -327,8 +385,5 @@ This often happens when bad initial parameters is given and some cluster is lost
 ```{r sessionInfo}
 sessionInfo()
 ```
-
-
-
 
 

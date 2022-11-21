@@ -34,7 +34,7 @@ Q_function <- function(par, prob_log, omega_log, X, k, times){
 #' @export
 get_par_int <- function(X, k, times){
   n = dim(X)[1]; d = dim(X)[2];
-  cov.int = c(0.1,mean(diag(cov(X))))
+  cov.int = c(0.5,mean(diag(cov(X))))
 
   init.cluster <- kmeans(X,centers = k)
   prob <- table(init.cluster$cluster)/n
@@ -64,6 +64,7 @@ get_par_int <- function(X, k, times){
 #' @export
 fun_clu <- function(data, k, Time = NULL, trans = log10, inv.cov = NULL,
                     initial.pars = NULL, iter.max = 1e2, parscale = 1e-1){
+  data = data[,order(colSums(data))]
   #attribute
   data = as.matrix(data); n = dim(data)[1]; d = dim(data)[2]
   eplison = 1; iter = 0;
@@ -135,7 +136,7 @@ if (is.null(Time)) {
   BIC = 2*(LL.next) + log(n)*(length(par.hat)+k-1)
 
   omega = exp(omega_log)
-  X.clustered <- data.frame(X, apply(omega,1,which.max))
+  X.clustered <- data.frame(X, apply(omega,1,which.max), check.names = F)
 
   return_obj <- list(cluster_number = k,
                      Log_likelihodd = LL.mem,
@@ -146,7 +147,7 @@ if (is.null(Time)) {
                      probibality = exp(prob_log),
                      omega = omega,
                      cluster = X.clustered,
-                     cluster2 = data.frame(data, apply(omega,1,which.max)),
+                     cluster2 = data.frame(data, apply(omega,1,which.max), check.names = F),
                      Time = times,
                      original_data = data)
   return(return_obj)
@@ -186,10 +187,11 @@ fun_clu_parallel <- function(data, Time = NULL, trans = log10, start, end, iter.
 #' @title plot BIC results for functional clustering
 #' @param result list directly from fun_clu_parallel function
 #' @param crit either BIC or AIC for module selection
+#' @param title title for the plot
 #' @import ggplot2
 #' @return the BIC plot
 #' @export
-fun_clu_BIC <- function(result, crit = "BIC"){
+fun_clu_BIC <- function(result, crit = "BIC", title = NULL){
   BIC.df = data.frame( k = sapply( result , "[[" , 'cluster_number' ),
                        BIC = sapply( result , "[[" , 'BIC' ) )
   AIC.df = data.frame( k = sapply( result , "[[" , 'cluster_number' ),
@@ -199,11 +201,13 @@ fun_clu_BIC <- function(result, crit = "BIC"){
 
   p = ggplot(BIC.df)+ theme_bw() + geom_line(mapping = aes_string(x = "k" ,y = "BIC"), color = 'grey10') +
     geom_vline(xintercept = min.k, linetype="dashed", color = "red", size=1.5) +
-    xlab("K") + ylab("BIC")
+    xlab("K") + ylab("BIC") + ggtitle(title) +
+    theme(plot.title = element_text(hjust = 0.5))
 
   p1 = ggplot(AIC.df)+ theme_bw() + geom_line(mapping = aes_string(x = "k" ,y = "AIC"), color = 'grey10') +
     geom_vline(xintercept = min.k2, linetype="dashed", color = "red", size=1.5) +
-    xlab("K") + ylab("AIC")
+    xlab("K") + ylab("AIC") + ggtitle(title) +
+    theme(plot.title = element_text(hjust = 0.5))
   if (crit != "BIC") {
     return(p1)
   } else{
@@ -271,22 +275,25 @@ fun_clu_select <- function(result_fit, result_funclu, i){
 
 #' @title functional clustering plot
 #' @param result list directly from fun_clu_parallel function
-#' @param best.k scale of BIC-determined cluster number
+#' @param best.k scalar of BIC-determined cluster number
 #' @param label relabel x and y label due to log-transform, set 10 as default
+#' @param degree scalar control transparency degree
 #' @import ggplot2
 #' @importFrom reshape2 melt
 #' @import scales
 #' @return functional clustering plot
 #' @export
-fun_clu_plot <- function(result, best.k, label = math_format(expr = 10^.x)){
+fun_clu_plot <- function(result, best.k, label = 10, degree = 1){
   cluster.result = result[[which(sapply( result , "[[" , 'cluster_number' )==best.k)]]
+  kk = length(table(cluster.result$cluster$apply.omega..1..which.max.))
+  if ( kk!= best.k) stop("Please use a smaller k or rerun functional clustering")
 
   times = cluster.result$Time
   times_new = seq(min(times),max(times),length = 30)
 
   par.mu = cluster.result$mu_par
   k = cluster.result$cluster_number
-  alpha = table(cluster.result$cluster$apply.omega..1..which.max.)
+  alpha = as.numeric(table(cluster.result$cluster$apply.omega..1..which.max.))
 
   mu.fit = power_equation(times_new, par.mu[1:k,])
   colnames(mu.fit) = times_new
@@ -303,25 +310,23 @@ fun_clu_plot <- function(result, best.k, label = math_format(expr = 10^.x)){
   colnames(plot.df) = c("cluster","name", "x","y")
   plot.df$x = as.numeric(as.character(plot.df$x))
 
-  plot.df$alpha = NA
-  for (i in 1:best.k) {
-    plot.df[which(plot.df$cluster==i),]$alpha = 10/alpha[i]
-  }
+  df.alpha = data.frame(cluster = 1:k, alpha = min(alpha)/alpha*degree)
+  plot.df = merge(plot.df, df.alpha, by = "cluster")
 
   name.df = data.frame(label = paste0("M",1:best.k,"(",alpha ,")"),
                        x = mean(range(times)), y = max(X)*0.9, cluster = 1:best.k)
 
 
-  p = ggplot() + geom_line(plot.df,
+  p = ggplot() + geom_point(plot.df,
                            mapping = aes_string(x = "x", y = "y",
                                                 colour = factor(plot.df$cluster),
-                                                alpha = "alpha",
+                                                alpha = factor(plot.df$cluster),
                                                 group = "name"),
-                           show.legend = F) +
+                           show.legend = F, shape = 1) +
     geom_line(mu.fit, mapping = aes_string(x = "x", y = "y", colour = factor(mu.fit$cluster)),
               size=1.25, show.legend = F)+
-    facet_wrap(~cluster) +
-    xlab("Habitat Index") + ylab("Microbial Abundance") + theme(axis.title=element_text(size=18)) +
+    facet_wrap(~cluster) + scale_alpha_manual(values = df.alpha$alpha) +
+    xlab("Habitat Index") + ylab("Niche Index") + theme(axis.title=element_text(size=18)) +
     geom_text(name.df, mapping = aes_string(x = "x", y = "y",label = "label"),
               check_overlap = TRUE, size = 4) +
     theme_bw() +
@@ -334,10 +339,20 @@ fun_clu_plot <- function(result, best.k, label = math_format(expr = 10^.x)){
           plot.background = element_blank(),
           strip.text = element_blank())
 
-  if(is.null(label)){
+  if (is.null(label)) {
     p = p
   } else {
-    p = p + scale_x_continuous(labels = label) + scale_y_continuous(labels = label)
+    xlabel = ggplot_build(p)$layout$panel_params[[1]]$x.sec$breaks
+    ylabel = ggplot_build(p)$layout$panel_params[[1]]$y.sec$breaks
+
+    xlabel2 = parse(text= paste(label,"^", xlabel, sep="") )
+
+    if (ylabel[1] == 0) {
+      ylabel2 = parse(text=c(0,paste(label,"^", ylabel[2:length(ylabel)], sep="")))
+    } else{
+      ylabel2 = parse(text= paste(label,"^", ylabel, sep="") )
+    }
+    p = p + scale_x_continuous(labels = xlabel2) + scale_y_continuous(labels = ylabel2)
   }
 
   return(p)

@@ -4,14 +4,16 @@
 \alias{fun_clu_plot}
 \title{functional clustering plot}
 \usage{
-fun_clu_plot(result, best.k, label = math_format(expr = 10^.x))
+fun_clu_plot(result, best.k, label = 10, degree = 1)
 }
 \arguments{
 \item{result}{list directly from fun_clu_parallel function}
 
-\item{best.k}{scale of BIC-determined cluster number}
+\item{best.k}{scalar of BIC-determined cluster number}
 
 \item{label}{relabel x and y label due to log-transform, set 10 as default}
+
+\item{degree}{scalar control transparency degree}
 }
 \value{
 functional clustering plot

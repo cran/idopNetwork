@@ -4,13 +4,14 @@
 \alias{qdODE_plot_base}
 \title{plot single decompose plot}
 \usage{
-qdODE_plot_base(result)
+qdODE_plot_base(result, label = 10, show.legend = TRUE)
 }
 \arguments{
 \item{result}{list of qdODE all}
-}
-\value{
-effect curve decompose plot
+
+\item{label}{relabel x and y label due to log-transform, set 10 as default}
+
+\item{show.legend}{to show legend}
 }
 \description{
 plot single decompose plot

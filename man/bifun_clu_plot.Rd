@@ -4,7 +4,15 @@
 \alias{bifun_clu_plot}
 \title{bifunctional clustering plot}
 \usage{
-bifun_clu_plot(result, best.k, label = math_format(expr = 10^.x), n1, n2)
+bifun_clu_plot(
+  result,
+  best.k,
+  label = 10,
+  degree = 1/4,
+  show.legend = FALSE,
+  color1 = "#38E54D",
+  color2 = "#FF8787"
+)
 }
 \arguments{
 \item{result}{list directly from bifun_clu_parallel function}
@@ -13,9 +21,13 @@ bifun_clu_plot(result, best.k, label = math_format(expr = 10^.x), n1, n2)
 
 \item{label}{relabel x and y label due to log-transform, set 10 as default}
 
-\item{n1}{scalar for number of column contain first trait/location etc}
+\item{degree}{scalar control transparency degree}
 
-\item{n2}{scalar for number of column contain second trait/location etc}
+\item{show.legend}{show legend or not}
+
+\item{color1}{Hex Color Codes for first data}
+
+\item{color2}{Hex Color Codes for second data}
 }
 \value{
 functional clustering plot

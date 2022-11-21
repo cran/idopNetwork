@@ -4,12 +4,14 @@
 \alias{fun_clu_BIC}
 \title{plot BIC results for functional clustering}
 \usage{
-fun_clu_BIC(result, crit = "BIC")
+fun_clu_BIC(result, crit = "BIC", title = NULL)
 }
 \arguments{
 \item{result}{list directly from fun_clu_parallel function}
 
 \item{crit}{either BIC or AIC for module selection}
+
+\item{title}{title for the plot}
 }
 \value{
 the BIC plot

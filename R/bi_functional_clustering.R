@@ -37,14 +37,14 @@ biQ_function <- function(par, prob_log, omega_log, X, k, n1, n2, times1, times2)
 #' @param times2 vector for the x values or time points
 #' @param n1 scalar for number of column contain first trait/location etc
 #' @param n2 scalar for number of column contain second trait/location etc
-#' @importFrom stats cov kmeans
+#' @importFrom stats cov kmeans IQR
 #' @return the initial parameters for functional clustering
 #' @export
 biget_par_int <- function(X, k, times1, times2, n1, n2){
   n = dim(X)[1]; d = dim(X)[2];
   X1 = X[,1:n1]; X2 = X[,(n1+1):(n1+n2)]
 
-  cov.int = c(0.9,mean(diag(cov(X1))), 0.9,mean(diag(cov(X2))))
+  cov.int = c(0.9,IQR(diag(cov(X1))), 0.9,IQR(diag(cov(X2))))
 
   init.cluster <- kmeans(X,centers = k)
   prob <- table(init.cluster$cluster)/n
@@ -76,7 +76,10 @@ biget_par_int <- function(X, k, times1, times2, n1, n2){
 #' @return the initial parameters for functional clustering
 #' @export
 bifun_clu <- function(data1, data2, k, Time1 = NULL, Time2 = NULL, trans = log10, inv.cov = NULL,
-                    initial.pars = NULL, iter.max = 1e2, parscale = 1e-1){
+                    initial.pars = NULL, iter.max = 1e2, parscale = 1e-3){
+  #sort from low to high
+  data1 = data1[,order(colSums(data1))]
+  data2 = data2[,order(colSums(data2))]
   #attribute
   data = as.matrix(cbind(data1,data2)); n = dim(data)[1]; d = dim(data)[2]
   n1 = dim(data1)[2]; n2 = dim(data2)[2]
@@ -162,7 +165,7 @@ bifun_clu <- function(data1, data2, k, Time1 = NULL, Time2 = NULL, trans = log10
   BIC = 2*(LL.next) + log(n)*(length(par.hat)+k-1)
 
   omega = exp(omega_log)
-  X.clustered <- data.frame(X, apply(omega,1,which.max))
+  X.clustered <- data.frame(X, apply(omega,1,which.max),check.names = F)
 
   return_obj <- list(cluster_number = k,
                      Log_likelihodd = LL.mem,
@@ -173,7 +176,7 @@ bifun_clu <- function(data1, data2, k, Time1 = NULL, Time2 = NULL, trans = log10
                      probibality = exp(prob_log),
                      omega = omega,
                      cluster = X.clustered,
-                     cluster2 = data.frame(data, apply(omega,1,which.max)),
+                     cluster2 = data.frame(data, apply(omega,1,which.max), check.names = F),
                      Time1 = times1,
                      Time2 = times2,
                      original_data = data)
@@ -216,16 +219,15 @@ bifun_clu_parallel <- function(data1, data2, Time1 = NULL, Time2 = NULL, trans =
 #' @title convert result of bifunctional clustering result
 #' @param result list directly from bifun_clu_parallel function
 #' @param best.k scale of BIC-determined cluster number
-#' @param n1 scalar for number of column contain first trait/location etc
-#' @param n2 scalar for number of column contain second trait/location etc
 #' @return list contain module data and fitted data
 #' @export
-bifun_clu_convert <- function(result, best.k, n1, n2){
+bifun_clu_convert <- function(result, best.k){
   cluster.result = result[[which(sapply( result , "[[" , 'cluster_number' )==best.k)]]
 
   times = cluster.result$Time1
   times_new = seq(min(times),max(times),length = 30)
 
+  n1 = length(times);n2 = length(cluster.result$Time2)
   par.mu = cluster.result$mu_par[,,1]
   colnames(par.mu) = c("a","b")
   rownames(par.mu) = paste0("M",1:best.k)
@@ -274,26 +276,32 @@ bifun_clu_convert <- function(result, best.k, n1, n2){
 #' @param result list directly from bifun_clu_parallel function
 #' @param best.k scale of BIC-determined cluster number
 #' @param label relabel x and y label due to log-transform, set 10 as default
-#' @param n1 scalar for number of column contain first trait/location etc
-#' @param n2 scalar for number of column contain second trait/location etc
+#' @param degree scalar control transparency degree
+#' @param show.legend show legend or not
+#' @param color1 Hex Color Codes for first data
+#' @param color2 Hex Color Codes for second data
 #' @import ggplot2
 #' @importFrom reshape2 melt
 #' @import scales
 #' @return functional clustering plot
 #' @export
-bifun_clu_plot <- function(result, best.k, label = math_format(expr = 10^.x), n1, n2){
+bifun_clu_plot <- function(result, best.k, label = 10, degree = 1/4, show.legend = FALSE,
+                           color1 = "#38E54D", color2 = "#FF8787"){
   cluster.result = result[[which(sapply( result , "[[" , 'cluster_number' )==best.k)]]
+  kk = length(table(cluster.result$cluster$apply.omega..1..which.max.))
+  if ( kk!= best.k) stop("Please use a smaller k or rerun functional clustering")
 
   times1 = cluster.result$Time1
   times2 = cluster.result$Time2
   times1_new = seq(min(times1),max(times1),length = 30)
   times2_new = seq(min(times2),max(times2),length = 30)
 
+  n1 = length(times1);n2 = length(times2)
   timesall = c(min(c(times1,times2)),max(c(times1,times2)))
 
   par.mu = cluster.result$mu_par
   k = cluster.result$cluster_number
-  alpha = table(cluster.result$cluster$apply.omega..1..which.max.)
+  alpha = as.numeric(table(cluster.result$cluster$apply.omega..1..which.max.))
 
   mu.fit1 = power_equation(times1_new, par.mu[,,1][1:k,])
   mu.fit2 = power_equation(times2_new, par.mu[,,2][1:k,])
@@ -309,8 +317,8 @@ bifun_clu_plot <- function(result, best.k, label = math_format(expr = 10^.x), n1
   colnames(mu.fit2) = c("cluster","x","y")
   mu.fit2$x = as.numeric(as.character(mu.fit2$x))
 
-  mu.fit1$type = "a"
-  mu.fit2$type = "b"
+  mu.fit1$type = "L"
+  mu.fit2$type = "R"
   mu.fit = rbind(mu.fit1,mu.fit2)
 
   plot.df1 = cluster.result$cluster[,c(1:n1,ncol(cluster.result$cluster))]
@@ -333,37 +341,33 @@ bifun_clu_plot <- function(result, best.k, label = math_format(expr = 10^.x), n1
   plot.df2$x = as.numeric(as.character(plot.df2$x))
   plot.df2$name = paste0("b_",plot.df2$name)
 
-  plot.df1$type = "a"
-  plot.df2$type = "b"
+  plot.df1$type = "L"
+  plot.df2$type = "R"
 
   plot.df = rbind(plot.df1,plot.df2)
 
 
-  plot.df$alpha = NA
-  for (i in 1:best.k) {
-    plot.df[which(plot.df$cluster==i),]$alpha = 1/alpha[i]
-  }
+  df.alpha = data.frame(cluster = 1:k, alpha =normalization(alpha)*degree)
+  plot.df = merge(plot.df, df.alpha, by = "cluster")
 
   name.df = data.frame(label = paste0("M",1:best.k,"(",alpha ,")"),
                        x = mean(timesall), y = max(X1,X2)*0.9, cluster = 1:best.k)
 
-
-
-  p = ggplot() + geom_line(plot.df,
-                           mapping = aes_string(x = "x", y = "y",
-                                                colour = factor(plot.df$type),
-                                                group = "name",
-                                                alpha = "alpha"),
-                           show.legend = F) +
+  p = ggplot() + geom_point(plot.df,
+                            mapping = aes_string(x = "x", y = "y",
+                                                 colour = factor(plot.df$type),
+                                                 group = "name",
+                                                 alpha = factor(plot.df$cluster)),
+                            show.legend = show.legend, shape = 1) +
     geom_line(mu.fit, mapping = aes_string(x = "x", y = "y", colour = factor(mu.fit$type)),
-              size=1.25, show.legend = T)+
-    facet_wrap(~cluster) +
-    xlab("Habitat Index") + ylab("Microbial Abundance") + theme(axis.title=element_text(size=18)) +
+              size=1.25, show.legend = show.legend)+
+    facet_wrap(~cluster) + scale_alpha_manual(values = df.alpha$alpha) +
+    xlab("Habitat Index") + ylab("Niche Index") + theme(axis.title=element_text(size=18)) +
     geom_text(name.df, mapping = aes_string(x = "x", y = "y",label = "label"),
               check_overlap = TRUE, size = 4) +
-    theme_bw()+
-    labs(color = "Type") + guides(alpha = "none") +
-    #scale_alpha_manual(values=c(0.1,0.1,1)) +
+    theme_bw() + scale_color_manual(name = "Type",values = c("L" = color1,
+                                                             "R" = color2))+
+    guides(alpha = "none") +
     theme(axis.title=element_text(size=15),
           axis.text.x = element_text(size=10),
           axis.text.y = element_text(size=10,hjust = 0),
@@ -373,11 +377,20 @@ bifun_clu_plot <- function(result, best.k, label = math_format(expr = 10^.x), n1
           plot.background = element_blank(),
           strip.text = element_blank())
 
-  if(is.null(label)){
+  if (is.null(label)) {
     p = p
   } else {
-    p = p + scale_x_continuous(labels = label) + scale_y_continuous(labels = label)
+    xlabel = ggplot_build(p)$layout$panel_params[[1]]$x.sec$breaks
+    ylabel = ggplot_build(p)$layout$panel_params[[1]]$y.sec$breaks
+
+    xlabel2 = parse(text= paste(label,"^", xlabel, sep="") )
+
+    if (ylabel[1] == 0) {
+      ylabel2 = parse(text=c(0,paste(label,"^", ylabel[2:length(ylabel)], sep="")))
+    } else{
+      ylabel2 = parse(text= paste(label,"^", ylabel, sep="") )
+    }
+    p = p + scale_x_continuous(labels = xlabel2) + scale_y_continuous(labels = ylabel2)
   }
   return(p)
 }
-

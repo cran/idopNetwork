@@ -4,7 +4,7 @@
 \alias{power_equation_all}
 \title{use power equation to fit observed values}
 \usage{
-power_equation_all(x, y, maxit = 1000)
+power_equation_all(x, y, maxit = 100)
 }
 \arguments{
 \item{x}{vector for x values}
