@@ -260,7 +260,7 @@ bifun_clu_convert <- function(result, best.k){
   rownames(mu.fit) = paste0("M",1:best.k)
 
   df = cluster.result$cluster2[,c((n1+1):(n1+n2+1))]
-  tmp = split(df,df$apply.omega..1..which.max.)
+  tmp = split(df,df[,ncol(df)])
   tmp2 = lapply(tmp, function(x) { x["apply.omega..1..which.max."] <- NULL; x })
 
   b = list(original_data = mu.fit,
@@ -288,7 +288,7 @@ bifun_clu_convert <- function(result, best.k){
 bifun_clu_plot <- function(result, best.k, label = 10, degree = 1/4, show.legend = FALSE,
                            color1 = "#38E54D", color2 = "#FF8787"){
   cluster.result = result[[which(sapply( result , "[[" , 'cluster_number' )==best.k)]]
-  kk = length(table(cluster.result$cluster$apply.omega..1..which.max.))
+  kk = length(table(cluster.result$cluster[,ncol(cluster.result$cluster)]))
   if ( kk!= best.k) stop("Please use a smaller k or rerun functional clustering")
 
   times1 = cluster.result$Time1
@@ -301,7 +301,7 @@ bifun_clu_plot <- function(result, best.k, label = 10, degree = 1/4, show.legend
 
   par.mu = cluster.result$mu_par
   k = cluster.result$cluster_number
-  alpha = as.numeric(table(cluster.result$cluster$apply.omega..1..which.max.))
+  alpha = as.numeric(table(cluster.result$cluster[,ncol(cluster.result$cluster)]))
 
   mu.fit1 = power_equation(times1_new, par.mu[,,1][1:k,])
   mu.fit2 = power_equation(times2_new, par.mu[,,2][1:k,])

@@ -1,8 +1,7 @@
 Package: idopNetwork
 Type: Package
-Title: A Cartographic Tool to Chart Spatial Microbial Interaction
-        Networks
-Version: 0.1.1
+Title: A Network Tool to Dissect Spatial Community Ecology
+Version: 0.1.2
 Author: Ang Dong
 Maintainer: Ang Dong <fantasys05227@gmail.com>
 Description: Most existing approaches for network reconstruction can only infer an overall network 
@@ -20,10 +19,12 @@ Imports: grDevices, stats, mvtnorm, orthopolynom, parallel, deSolve,
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.50)
-RoxygenNote: 7.2.1
-Suggests: knitr, rmarkdown
+RoxygenNote: 7.2.3
+Suggests: covr, knitr, rmarkdown
 VignetteBuilder: knitr
+URL: https://github.com/cxzdsa2332/idopNetwork
+BugReports: https://github.com/cxzdsa2332/idopNetwork/issues
 NeedsCompilation: no
-Packaged: 2022-11-21 05:31:51 UTC; ddaa
+Packaged: 2023-04-18 06:29:49 UTC; ddaa
 Repository: CRAN
-Date/Publication: 2022-11-21 08:30:02 UTC
+Date/Publication: 2023-04-18 06:50:02 UTC

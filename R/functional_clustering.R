@@ -237,7 +237,7 @@ fun_clu_convert <- function(result, best.k){
   rownames(mu.fit) = paste0("M",1:best.k)
 
   df = cluster.result$cluster2
-  tmp = split(df,df$apply.omega..1..which.max.)
+  tmp = split(df,df[,ncol(df)])
   tmp2 = lapply(tmp, function(x) { x["apply.omega..1..which.max."] <- NULL; x })
 
   return_obj <- list(original_data = mu.fit,
@@ -285,7 +285,7 @@ fun_clu_select <- function(result_fit, result_funclu, i){
 #' @export
 fun_clu_plot <- function(result, best.k, label = 10, degree = 1){
   cluster.result = result[[which(sapply( result , "[[" , 'cluster_number' )==best.k)]]
-  kk = length(table(cluster.result$cluster$apply.omega..1..which.max.))
+  kk = length(table(cluster.result$cluster[,ncol(cluster.result$cluster)]))
   if ( kk!= best.k) stop("Please use a smaller k or rerun functional clustering")
 
   times = cluster.result$Time
@@ -293,7 +293,7 @@ fun_clu_plot <- function(result, best.k, label = 10, degree = 1){
 
   par.mu = cluster.result$mu_par
   k = cluster.result$cluster_number
-  alpha = as.numeric(table(cluster.result$cluster$apply.omega..1..which.max.))
+  alpha = as.numeric(table(cluster.result$cluster[,ncol(cluster.result$cluster)]))
 
   mu.fit = power_equation(times_new, par.mu[1:k,])
   colnames(mu.fit) = times_new
